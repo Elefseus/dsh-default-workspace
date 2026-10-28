@@ -135,6 +135,10 @@ The bundle also ships a browser half, so the same three actions are reachable as
 panel: a **Workspace** row at the top of the sidebar (the same slot the task board
 uses) opens **Default workspace** in the main area.
 
+![The default workspace panel](assets/panel.png)
+
+*The panel in Chinese — every label follows the Host's language.*
+
 The panel shows the current default path, whether the directory exists, the stored
 and live Session counts and the log health scan, and it offers a path field with
 **Preview** (a dry run) and **Switch** (armed: the button asks for a second click),
