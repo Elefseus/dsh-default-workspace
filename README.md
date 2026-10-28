@@ -91,6 +91,26 @@ The resulting `SessionPersistenceCorruptionError` is caught by `listArtifacts` a
 
 Node's own `zstdDecompressSync` decompresses only the first frame of a multi-frame stream and `createZstdDecompress` throws `ZSTD_error_prefix_unknown` on the second, so `lib/zstd-multi.js` walks the frame container itself.
 
+## GUI panel
+
+The bundle also ships a browser half, so the same three actions are reachable as a
+panel: a **Workspace** row at the top of the sidebar (the same slot the task board
+uses) opens **Default workspace** in the main area.
+
+The panel shows the current default path, whether the directory exists, the stored
+and live Session counts and the log health scan, and it offers a path field with
+**Preview** (a dry run) and **Switch** (armed: the button asks for a second click),
+plus **Check logs** and **Repair logs** for the re-framing pass. Paths travel as
+query parameters and every call goes through the platform's own trust fence, so the
+routes answer only the DSH page (`401` for anything else).
+
+This half is a hand-written bundle for DSH's lazy-CJS client loader — no build step.
+`lib/client.js` registers `window.__ModuleLoader__.load({ id, factory })`, and
+`package.json` declares it as `exports["./client"]` plus
+`dsh.client: { platform: "web" }`. Editing it is picked up by the client HMR poll,
+but **`dsh.client` / `exports` metadata is cached until the Host restarts** — after
+the first install, restart DSH once to make the panel appear.
+
 ## Install
 
 ```sh
@@ -131,6 +151,8 @@ The desktop app enables HMR, so appending a line to the profile's `cordis.patch.
 ```
 lib/index.js       plugin wiring: the Host's defineTool, ctx.get services, tool registration
 lib/tool.js        the default_workspace definition: parameters, execute, text renderers
+lib/web.js         the panel's three JSON routes, behind the platform trust fence
+lib/client.js      the browser half: sidebar row + main panel, hand-written for the lazy-CJS loader
 lib/switch.js      status / switch / repair: record rewrite, directory move, log relocation, health scan
 lib/paths.js       Session log path rules (projectKey, encodeSegment), mirrored from the Host
 lib/zstd-multi.js  multi-frame Zstandard walker, first-frame checks, header rewrite, re-framing
@@ -145,8 +167,10 @@ npm test
 
 - `test/engine.test.mjs` — 40 assertions against a fake registry that mirrors `WorkspaceRegistry` / `WorkspaceEntity` semantics (`mutate` pruning, `candidateMatches`, `rememberSessionPath`): status counts, live-Session refusal, path claimed by another Workspace, dry runs, compressed and plain logs, re-framing of single-frame logs, repair backups and idempotency, plus a junction/symlink scenario where the record's spelling differs from its `realpath`.
 - `test/tool.test.mjs` — 22 assertions on the tool contract: required parameters, render output as content blocks, lossless-JSON results, and a full status → dry-run → apply → repair cycle.
+- `test/web.test.mjs` — 19 assertions on the route actions and the trust fence: path validation, boolean defaults, dry runs leaving the record alone, the 401/403 fence, and the loopback fallback.
+- `test/client.test.mjs` — 20 assertions on the browser half, loaded the way the shell loads it: the factory id, the exported plugin, the two slot registrations, the locale dictionary, the rendered panel and the document-relative route calls.
 
-CI runs both on Linux and Windows, Node 22 and 24.
+CI runs all four on Linux and Windows, Node 22 and 24.
 
 ## Compatibility
 

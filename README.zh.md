@@ -89,6 +89,20 @@ function assertZstdHeaderFrame(plaintext) {
 
 Node 自带的 `zstdDecompressSync` 对多帧只解第一帧，`createZstdDecompress` 解到第二帧报 `ZSTD_error_prefix_unknown`，所以 `lib/zstd-multi.js` 自己遍历帧容器。
 
+## 图形面板
+
+插件同时带浏览器半边，三个动作都能在界面上点：侧栏左上角多一行「工作区」（与任务看板同一个座位），
+点它在主区打开「默认工作区」面板。
+
+面板显示当前默认路径、目录是否存在、已存与正在运行的会话数、日志体检结果；提供路径输入框和
+「预览」（dry run）与「切换」（两段式确认：点第二次才执行）两个按钮，另有「检查日志」「修复日志」
+用于重帧化。参数走查询串，请求先过平台的信任栅栏，所以这些路由只对 DSH 页面本身应答（其它来源 401）。
+
+这半边是手写产物，适配 DSH 的懒加载 CJS 客户端加载器，**没有构建步骤**：`lib/client.js` 注册
+`window.__ModuleLoader__.load({ id, factory })`，`package.json` 里以 `exports["./client"]` 与
+`dsh.client: { platform: "web" }` 声明。改这个文件由客户端 HMR 轮询自动生效，但
+**`dsh.client` / `exports` 元数据会缓存到宿主重启** —— 首次安装后重启一次 DSH，面板才会出现。
+
 ## 安装
 
 ```sh
