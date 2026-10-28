@@ -1,7 +1,7 @@
 {
   "name": "dsh-default-workspace",
   "version": "0.1.0",
-  "description": "Inspect, repair, and relocate DeepSeek Harness's default Workspace at runtime: rewrites the Workspace record in the running Host, optionally moves the directory contents, and relocates or re-frames stored Session logs whose header still points at the old path.",
+  "description": "DeepSeek Harness opens every new Session in a default Workspace that it pins to <Documents>/deepseek-harness/default-workspace — on Windows the system drive — and never relocates. This plugin inspects, repairs, and relocates that Workspace at runtime: it rewrites the Workspace record in the running Host, optionally moves the directory contents, and relocates or re-frames stored Session logs that still point at the old path.",
   "type": "module",
   "engines": {
     "node": "^22.19.0 || >=24.0.0"

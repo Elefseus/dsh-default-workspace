@@ -13,13 +13,40 @@ default_workspace {"action": "repair", "dryRun": true}
 
 ## 为什么需要它
 
-DSH 在注册工作区时就把路径钉死了：
+每个新会话都开在**默认工作区**里，而 DSH 在注册工作区的那一刻就把这个路径钉死了。
+全新安装时它是 `<文档>/deepseek-harness/default-workspace`；Windows 上「文档」走的是
+shell 的 `MyDocuments` 已知文件夹，默认就是 `C:\Users\<你>\Documents`——除非有东西
+（OneDrive 的「备份文档」、漫游策略、手动搬迁用户配置）把它改到了别处。也就是说，
+**所有会话都在往里写的那个目录，一开始就在系统盘上**，而系统盘通常是整机最小的盘。
 
-- 内置的 `initializeDefault` 会建 `<文档>/deepseek-harness/default-workspace`，它自己的注释写着 *"The Host never renames or relocates an existing default"*；
-- 工作区 Remote API 只有 `create`、`rename`、`delete`、`insertBefore`、`archive`、`pin`、`follow`，**没有任何改 `path` 的方法**；
-- 手工改注册表要重启才生效，而且 header 里还是旧 `cwd` 的会话会直接打不开——只要 header 与日志实际所在目录不一致，宿主就拒读。
+这在三种很平常的情况下就是真问题：
 
-本插件在运行中的宿主里把这套迁移完整做掉。
+- **系统盘满了。** 会话的产物（代码、数据集、截图、包缓存）都落在默认工作区，它会一直
+  长，而且界面上没有任何开关。把它挪到数据盘是最自然的解法，却没有受支持的做法。
+- **「文档」被重定向了。** 开了 OneDrive 的文件夹备份，或者搬了用户配置，已知文件夹
+  指向就悄悄变了。工作区记录仍指向旧路径，于是默认工作区直接不存在了；已经写在旧路径下
+  的会话日志也跟着打不开。
+- **想把新会话统一钉在某个目录。** 比如都开到 `D:\work`，而不是随用户配置走的路径。
+  这是很常见的整理诉求，但工作区 API 没有改 `path` 的方法，界面上也没有这个入口。
+
+让它卡住的原因：
+
+- 内置的 `initializeDefault` 会建 `<文档>/deepseek-harness/default-workspace`，它自己的
+  注释写着 *"The Host never renames or relocates an existing default"*；
+- 工作区 Remote API 只有 `create`、`rename`、`delete`、`insertBefore`、`archive`、
+  `pin`、`follow`，**没有任何改 `path` 的方法**；
+- `create` 建出来的是**普通**工作区；默认工作区是被 `defaultWorkspaceId` 指着的唯一那条
+  记录，而「把它指到别处」这件事哪里都没提供；
+- 手工改 `~/.dsh/storages/workspace.json` 要重启才生效，而重启后宿主会拒读所有
+  「header 里的 `cwd` 与日志所在目录不一致」的会话日志——报 `corrupt session log "…":
+  header id "…" and cwd identify "…"`——这些会话就从列表里消失了；
+- 在资源管理器里直接拖文件夹最糟：记录还指着旧路径，日志目录名里也仍然编码着旧路径，
+  新位置对宿主完全不可见。旧目录没了，新目录又不被使用。
+
+本插件在运行中的宿主里把这套迁移完整做掉：改记录、可选搬目录内容、搬会话日志
+（header 的 `cwd` **和**它所在的目录一起改），再给宿主已经静默跳过的日志做一次重帧化修复。
+量级参考：它最初就是为一次真实迁移写的——446 个顶层条目 / 13,280 个文件 / 668 MB 换到另一块盘，
+连带 22 个已存会话日志一起过去，全程不重启，每个重写过的日志都逐字节核对过。
 
 ## 工具
 

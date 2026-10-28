@@ -13,13 +13,51 @@ default_workspace {"action": "repair", "dryRun": true}
 
 ## Why this exists
 
-DSH fixes a Workspace's path when the Workspace is registered:
+Every new DSH Session opens in the **default Workspace**, and the Host pins that
+path when the Workspace is registered. On a fresh install the folder is
+`<Documents>/deepseek-harness/default-workspace`; on Windows `Documents` resolves
+through the shell's `MyDocuments` known folder, which is
+`C:\Users\<you>\Documents` unless something — OneDrive's "back up Documents", a
+roaming policy, a profile move — redirected it. So the one folder that every
+Session writes into starts out on the **system drive**, which is usually the
+smallest disk in the machine.
 
-- the built-in `initializeDefault` creates `<Documents>/deepseek-harness/default-workspace`, and its own documentation says *"The Host never renames or relocates an existing default"*;
-- the Workspace remote API has `create`, `rename`, `delete`, `insertBefore`, `archive`, `pin`, `follow` — **nothing that changes `path`**;
-- hand-editing the registry only takes effect after a restart, and Sessions whose log header still carries the old `cwd` then fail to open at all, because the Host refuses any log whose header disagrees with where the file actually lives.
+That is a real problem in three ordinary situations:
 
-This plugin performs the whole relocation inside the running Host.
+- **The system drive fills up.** Sessions write their output — code, datasets,
+  screenshots, package caches — into the default Workspace, and it grows with no
+  visible knob. Moving it to a data drive is the obvious fix, and there is no
+  supported way to do it.
+- **`Documents` gets redirected.** Enabling OneDrive's folder backup, or moving
+  the user profile, silently changes where the known folder points. The Workspace
+  record keeps the old path, so the default Workspace no longer exists — and
+  Sessions whose logs already lived under it stop opening.
+- **You want one canonical directory.** Pinning new Sessions to `D:\work` instead
+  of a per-user profile path is a normal housekeeping decision, but the Workspace
+  API has no `path` setter and the UI offers no such control.
+
+What makes it sticky:
+
+- the built-in `initializeDefault` creates `<Documents>/deepseek-harness/default-workspace`,
+  and its own documentation says *"The Host never renames or relocates an existing default"*;
+- the Workspace remote API has `create`, `rename`, `delete`, `insertBefore`,
+  `archive`, `pin`, `follow` — **nothing that changes `path`**;
+- `create` makes an *ordinary* Workspace; the default is the single record named by
+  `defaultWorkspaceId`, and pointing it somewhere else is not offered anywhere;
+- hand-editing `~/.dsh/storages/workspace.json` only takes effect after a restart,
+  and the Host then refuses every stored Session log whose header `cwd` no longer
+  matches the directory the log sits in — `corrupt session log "…": header id "…"
+  and cwd identify "…"` — so those Sessions disappear from the list;
+- dragging the folder in Explorer is the worst case: the record still points at the
+  old path, the log directories still encode it, and the new location is invisible
+  to the Host. The old folder is gone and the new one is not used.
+
+This plugin does the whole relocation inside the running Host: record rewrite,
+optional file move, Session log relocation (header `cwd` **and** its directory),
+and a repair pass for logs the Host is already skipping. For scale: the migration it
+was written for moved 446 entries / 13,280 files / 668 MB to another drive and
+carried 22 stored Session logs across, with no restart and a byte-for-byte check of
+every rewritten log.
 
 ## What the tool does
 
