@@ -1,0 +1,54 @@
+{
+  "name": "dsh-default-workspace",
+  "version": "0.1.0",
+  "description": "Inspect, repair, and relocate DeepSeek Harness's default Workspace at runtime: rewrites the Workspace record in the running Host, optionally moves the directory contents, and relocates or re-frames stored Session logs whose header still points at the old path.",
+  "type": "module",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "node test/engine.test.mjs && node test/tool.test.mjs"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "deepseek-harness",
+    "workspace",
+    "session",
+    "zstd"
+  ],
+  "license": "MIT",
+  "author": "Elefseus",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Elefseus/dsh-default-workspace.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Elefseus/dsh-default-workspace/issues"
+  },
+  "homepage": "https://github.com/Elefseus/dsh-default-workspace#readme",
+  "files": [
+    "lib/**/*.js",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": ">=0.0.1-rc.1 <0.1.0 || >=0.1.0-rc.1 <0.2.0-0 || >=0.2.0-rc.1 <0.3.0-0 || >=0.2.1-rc.1 <0.3.0-0"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.1.7-rc.1"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

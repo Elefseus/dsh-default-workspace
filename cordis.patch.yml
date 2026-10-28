@@ -1,0 +1,23 @@
+# dsh-default-workspace — inspect / repair / relocate DSH's default Workspace.
+# 在运行时查看、修复并迁移 DSH 的默认工作区。
+#
+# DSH pins a Workspace path at registration time (the built-in `initializeDefault`
+# creates <Documents>/deepseek-harness/default-workspace, and no API changes `path`
+# afterwards). This plugin does the whole relocation through the Host's own
+# services: rewrite the record via the storage domain (no hand-editing
+# workspace.json), optionally move the directory contents, and move every stored
+# Session log whose header `cwd` still points at the old path — the header and the
+# log's project directory must agree or the Host refuses to read it.
+#
+# DSH 在注册工作区时就把 path 钉死（内置 initializeDefault 会建
+# <文档>/deepseek-harness/default-workspace，之后没有 API 能改 path）。本插件
+# 通过宿主自己的服务完成迁移：走存储域改记录（不手改 workspace.json）、可按需
+# 搬目录内容，并把 header cwd 仍指向旧路径的会话日志一起搬走（header 与日志所在
+# projectKey 目录必须一致，否则宿主拒读）。
+- insert:
+    - id: dsh-default-workspace
+      name: 'dsh-default-workspace'
+      config:
+        # Empty = use the Host's sessionPersistence root (usually ~/.dsh/sessions).
+        # 留空 = 用宿主 sessionPersistence 的 root（通常 ~/.dsh/sessions）。
+        sessionsRoot: ''
