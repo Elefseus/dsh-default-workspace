@@ -143,7 +143,7 @@ test/              dependency-free harnesses, run with `npm test`
 npm test
 ```
 
-- `test/engine.test.mjs` — 35 assertions against a fake registry that mirrors `WorkspaceRegistry` / `WorkspaceEntity` semantics (`mutate` pruning, `candidateMatches`, `rememberSessionPath`): status counts, live-Session refusal, path claimed by another Workspace, dry runs, compressed and plain logs, re-framing of single-frame logs, repair backups and idempotency.
+- `test/engine.test.mjs` — 40 assertions against a fake registry that mirrors `WorkspaceRegistry` / `WorkspaceEntity` semantics (`mutate` pruning, `candidateMatches`, `rememberSessionPath`): status counts, live-Session refusal, path claimed by another Workspace, dry runs, compressed and plain logs, re-framing of single-frame logs, repair backups and idempotency, plus a junction/symlink scenario where the record's spelling differs from its `realpath`.
 - `test/tool.test.mjs` — 22 assertions on the tool contract: required parameters, render output as content blocks, lossless-JSON results, and a full status → dry-run → apply → repair cycle.
 
 CI runs both on Linux and Windows, Node 22 and 24.

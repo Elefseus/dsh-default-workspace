@@ -251,13 +251,41 @@ async function main() {
   await mkdir(realDir, { recursive: true });
   try {
     await symlink(realDir, linkDir, process.platform === 'win32' ? 'junction' : 'dir');
-    const aliasRecords = new Map([['ws-alias', { path: linkDir, title: 'alias', createdAt: 1, updatedAt: 1, sessionIds: [] }]]);
+    const aliasId = 'session-alias';
+    const aliasRoot = join(ROOT, 'alias-sessions');
+    const aliasTarget = join(ROOT, 'alias-target');
+    const aliasDir = sessionDir(aliasRoot, linkDir, aliasId);
+    await mkdir(aliasDir, { recursive: true });
+    await writeFile(
+      join(aliasDir, logFilename()),
+      storedLog(
+        { type: 'session', version: 4, id: aliasId, createdAt: 4, isSeeded: false, delegationDepth: 0, cwd: linkDir },
+        [{ type: 'user/message', text: 'alias' }],
+      ),
+    );
+    const aliasRecords = new Map([['ws-alias', { path: linkDir, title: 'alias', createdAt: 1, updatedAt: 1, sessionIds: [aliasId] }]]);
     const aliasRegistry = new FakeRegistry(aliasRecords, 'ws-alias');
-    const aliasPersistence = { root: join(ROOT, 'alias-sessions'), list: async () => [] };
+    aliasRegistry.host.rememberSessionPath(aliasId, linkDir);
+    const aliasPersistence = { root: aliasRoot, list: async () => [{ header: { id: aliasId, cwd: linkDir }, sizeBytes: 1 }] };
     const aliasPlan = await planSwitch({ registry: aliasRegistry, sessions: { list: () => [] }, persistence: aliasPersistence, path: linkDir });
     check('a record path that realpath resolves elsewhere is recognised as the current path', aliasPlan.noop === true, aliasPlan);
     const aliasRealPlan = await planSwitch({ registry: aliasRegistry, sessions: { list: () => [] }, persistence: aliasPersistence, path: realDir });
     check('the canonical spelling of the record path is a no-op too', aliasRealPlan.noop === true, aliasRealPlan);
+
+    // The stored header is keyed by the alias spelling while comparisons run on the
+    // canonical one: the Session must still be found, moved, and re-headered.
+    const aliasMovePlan = await planSwitch({ registry: aliasRegistry, sessions: { list: () => [] }, persistence: aliasPersistence, path: aliasTarget });
+    check('an aliased record still finds its Sessions for relocation', aliasMovePlan.sessions.length === 1 && aliasMovePlan.sessions[0].id === aliasId, aliasMovePlan.sessions);
+    const aliasReport = await applySwitch({
+      registry: aliasRegistry,
+      persistence: aliasPersistence,
+      plan: aliasMovePlan,
+      moveFiles: false,
+      migrateSessions: true,
+    });
+    check('an aliased Session is relocated', aliasReport.migratedSessions.length === 1, aliasReport);
+    const aliasMoved = inspectLog(await readFile(join(sessionDir(aliasRoot, aliasTarget, aliasId), logFilename())));
+    check('the relocated log carries the new cwd', aliasMoved.readable === true && samePath(aliasMoved.header.cwd, aliasTarget), aliasMoved.header);
   } catch (error) {
     check('a symlinked temp directory is available for the alias scenario', false, String(error));
   }

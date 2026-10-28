@@ -141,7 +141,7 @@ test/              零依赖测试，`npm test` 直接跑
 npm test
 ```
 
-- `test/engine.test.mjs` —— 35 项断言，跑在复刻 `WorkspaceRegistry` / `WorkspaceEntity` 语义的假注册表上（`mutate` 剪枝、`candidateMatches`、`rememberSessionPath`）：状态计数、活会话拒绝搬文件、路径被占用拒绝、dry-run 不改盘、压缩与纯文本日志迁移、单帧坏日志重帧化、repair 备份与幂等。
+- `test/engine.test.mjs` —— 40 项断言，跑在复刻 `WorkspaceRegistry` / `WorkspaceEntity` 语义的假注册表上（`mutate` 剪枝、`candidateMatches`、`rememberSessionPath`）：状态计数、活会话拒绝搬文件、路径被占用拒绝、dry-run 不改盘、压缩与纯文本日志迁移、单帧坏日志重帧化、repair 备份与幂等，另加一个「记录里的拼写与 realpath 不同」的 junction/符号链接场景。
 - `test/tool.test.mjs` —— 22 项断言，覆盖工具契约：必填参数、渲染返回内容块、结果必须是 lossless JSON，以及 status → dry-run → apply → repair 全流程。
 
 CI 在 Linux 与 Windows、Node 22 与 24 上各跑一遍。
