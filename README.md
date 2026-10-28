@@ -57,6 +57,8 @@ Parameters:
 
 `WorkspaceEntity.mutate()` is the only write path for a Workspace record, and it prunes `sessionIds` down to the Sessions that still match the new path. So the plugin first registers each relocating Session under the new path (`registry.host.rememberSessionPath`), then mutates `path` — otherwise the Host would drop every Session of the old Workspace from the record.
 
+Operations always use the spelling the record holds — that is what stored headers and project directories are keyed by — but every comparison (same path? one inside the other? whose log is this?) runs on the `realpath` form, so an 8.3 short name, a junction or a symlinked documents folder is still recognised as the same directory.
+
 ### The logs
 
 A stored log lives at

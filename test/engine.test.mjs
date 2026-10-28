@@ -1,6 +1,6 @@
 // Offline harness: exercise the switch engine against a fake registry that
 // mirrors the Host's WorkspaceRegistry/WorkspaceEntity semantics.
-import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -241,6 +241,26 @@ async function main() {
   check('repair retires the original into a backup tree', repairBackups.some((name) => name.startsWith('session-reframe-')), repairBackups);
   const cleanRun = await repairLogs({ root: repairRoot });
   check('a second repair run finds nothing to do', cleanRun.unreadable === 0 && cleanRun.repaired.length === 0, cleanRun);
+
+
+  // --- a record spelling that realpath resolves elsewhere is the same directory ---
+  // (GitHub's Windows runners hand mkdtemp an 8.3 short name, so the stored path and
+  // the realpath of the same directory differ; a junction reproduces that shape here.)
+  const realDir = join(ROOT, 'real-spelling');
+  const linkDir = join(ROOT, 'link-spelling');
+  await mkdir(realDir, { recursive: true });
+  try {
+    await symlink(realDir, linkDir, process.platform === 'win32' ? 'junction' : 'dir');
+    const aliasRecords = new Map([['ws-alias', { path: linkDir, title: 'alias', createdAt: 1, updatedAt: 1, sessionIds: [] }]]);
+    const aliasRegistry = new FakeRegistry(aliasRecords, 'ws-alias');
+    const aliasPersistence = { root: join(ROOT, 'alias-sessions'), list: async () => [] };
+    const aliasPlan = await planSwitch({ registry: aliasRegistry, sessions: { list: () => [] }, persistence: aliasPersistence, path: linkDir });
+    check('a record path that realpath resolves elsewhere is recognised as the current path', aliasPlan.noop === true, aliasPlan);
+    const aliasRealPlan = await planSwitch({ registry: aliasRegistry, sessions: { list: () => [] }, persistence: aliasPersistence, path: realDir });
+    check('the canonical spelling of the record path is a no-op too', aliasRealPlan.noop === true, aliasRealPlan);
+  } catch (error) {
+    check('a symlinked temp directory is available for the alias scenario', false, String(error));
+  }
 
   await rm(ROOT, { recursive: true, force: true });
   const failures = assertions.filter((item) => !item.ok);
