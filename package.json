@@ -13,7 +13,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "test": "node test/engine.test.mjs && node test/tool.test.mjs && node test/rpc.test.mjs && node test/client.test.mjs"
+    "test": "node test/engine.test.mjs && node test/tool.test.mjs && node test/web.test.mjs && node test/client.test.mjs"
   },
   "keywords": [
     "dsh",
